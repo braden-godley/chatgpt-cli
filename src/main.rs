@@ -5,19 +5,22 @@ use serde_json::json;
 use reqwest;
 
 fn get_openai_key() -> Result<String, String> {
-    let home_dir = dirs::home_dir();
-    if let None = home_dir {
-        return Err(String::from("Can't find home directory!"));
-    }
+    match dirs::home_dir() {
+        Some(home_dir) => {
+            let key_file = home_dir.join(".openai-key");
 
-    let key_file = home_dir.unwrap().join(".openai-key");
+            let key = fs::read_to_string(key_file);
 
-    let key = fs::read_to_string(key_file);
-    match key {
-        Ok(contents) => {
-            Ok(String::from(contents.trim()))
+            match key {
+                Ok(contents) => {
+                    Ok(String::from(contents.trim()))
+                },
+                Err(e) => Err(e.to_string()),
+            }
         },
-        Err(e) => Err(e.to_string()),
+        None => {
+            Err(String::from("Unable to find home directory!"))
+        },
     }
 }
 
