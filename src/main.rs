@@ -3,6 +3,7 @@ use dirs;
 use std::fs;
 use serde_json::json;
 use reqwest;
+use serde::{Deserialize, Serialize};
 
 fn get_openai_key() -> Result<String, String> {
     match dirs::home_dir() {
@@ -37,8 +38,6 @@ fn construct_body(prompt: &str) -> String {
 
     body.to_string()
 }
-
-use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 struct ChatGPTResponse {
