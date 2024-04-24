@@ -5,6 +5,8 @@ use serde_json::json;
 use reqwest;
 use serde::{Deserialize, Serialize};
 
+/// Retrieves the OpenAI API key from the user's home directory.
+/// Returns a `Result` containing the key as a string or an error message.
 fn get_openai_key() -> Result<String, String> {
     match dirs::home_dir() {
         Some(home_dir) => {
@@ -25,6 +27,8 @@ fn get_openai_key() -> Result<String, String> {
     }
 }
 
+/// Constructs the JSON body for the API request.
+/// Takes a `prompt` string and returns the JSON body as a string.
 fn construct_body(prompt: &str) -> String {
     let body = json!({
         "model": "gpt-3.5-turbo",
@@ -39,6 +43,7 @@ fn construct_body(prompt: &str) -> String {
     body.to_string()
 }
 
+/// Data structures for deserializing the response from the ChatGPT API.
 #[derive(Serialize, Deserialize, Debug)]
 struct ChatGPTResponse {
     id: String,
@@ -70,6 +75,8 @@ struct ChatGPTResponseUsage {
     total_tokens: i32,
 }
 
+/// Sends a request to the ChatGPT API and processes the response.
+/// Returns a `Result` containing the response message or an error string.
 fn get_response(prompt: &str, openai_key: &str) -> Result<String, String> {
     let request_body = construct_body(&prompt);
 
@@ -105,6 +112,8 @@ fn get_response(prompt: &str, openai_key: &str) -> Result<String, String> {
     }
 }
 
+/// Gets the users key, handles command line logic, and
+/// sends prompt to ChatGPT
 fn main() {
     let openai_key = get_openai_key();
     
