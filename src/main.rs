@@ -1,9 +1,11 @@
+pub mod structs;
+
 use dirs;
 use reqwest;
-use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::fs;
 use std::{env, process::exit};
+use crate::structs::ChatGPTResponse;
 
 /// Retrieves the OpenAI API key from the user's home directory.
 /// Returns a `Result` containing the key as a string or an error message.
@@ -37,38 +39,6 @@ fn construct_body(prompt: &str) -> String {
     });
 
     body.to_string()
-}
-
-/// Data structures for deserializing the response from the ChatGPT API.
-#[derive(Serialize, Deserialize, Debug)]
-struct ChatGPTResponse {
-    id: String,
-    object: String,
-    created: i32,
-    model: String,
-    choices: Vec<ChatGPTResponseChoice>,
-    usage: ChatGPTResponseUsage,
-    system_fingerprint: String,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct ChatGPTResponseChoice {
-    index: i32,
-    message: ChatGPTResponseChoiceMessage,
-    logprobs: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct ChatGPTResponseChoiceMessage {
-    role: String,
-    content: String,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct ChatGPTResponseUsage {
-    prompt_tokens: i32,
-    completion_tokens: i32,
-    total_tokens: i32,
 }
 
 /// Sends a request to the ChatGPT API and processes the response.
