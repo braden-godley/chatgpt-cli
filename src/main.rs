@@ -1,9 +1,9 @@
-use std::{env, process::exit};
 use dirs;
-use std::fs;
-use serde_json::json;
 use reqwest;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
+use std::fs;
+use std::{env, process::exit};
 
 /// Retrieves the OpenAI API key from the user's home directory.
 /// Returns a `Result` containing the key as a string or an error message.
@@ -15,15 +15,11 @@ fn get_openai_key() -> Result<String, String> {
             let key = fs::read_to_string(key_file);
 
             match key {
-                Ok(contents) => {
-                    Ok(String::from(contents.trim()))
-                },
+                Ok(contents) => Ok(String::from(contents.trim())),
                 Err(e) => Err(e.to_string()),
             }
-        },
-        None => {
-            Err(String::from("Unable to find home directory!"))
-        },
+        }
+        None => Err(String::from("Unable to find home directory!")),
     }
 }
 
@@ -81,7 +77,8 @@ fn get_response(prompt: &str, openai_key: &str) -> Result<String, String> {
     let request_body = construct_body(&prompt);
 
     let client = reqwest::blocking::Client::new();
-    let response_body = client.post("https://api.openai.com/v1/chat/completions")
+    let response_body = client
+        .post("https://api.openai.com/v1/chat/completions")
         .bearer_auth(openai_key)
         .header("Content-Type", "application/json")
         .body(request_body)
@@ -91,7 +88,7 @@ fn get_response(prompt: &str, openai_key: &str) -> Result<String, String> {
         Ok(response) => {
             let data = response.text();
             if let Err(_) = data {
-                return Err(String::from("Can't read response"))
+                return Err(String::from("Can't read response"));
             }
 
             let data = data.unwrap();
@@ -99,15 +96,13 @@ fn get_response(prompt: &str, openai_key: &str) -> Result<String, String> {
             let parsed_data: Result<ChatGPTResponse, _> = serde_json::from_str(&data);
 
             match parsed_data {
-                Ok(gpt_response) => {
-                    match gpt_response.choices.get(0) {
-                        Some(choice) => Ok(choice.message.content.clone()),
-                        None => Err(String::from("No first message"))
-                    }
+                Ok(gpt_response) => match gpt_response.choices.get(0) {
+                    Some(choice) => Ok(choice.message.content.clone()),
+                    None => Err(String::from("No first message")),
                 },
                 Err(_) => Err(String::from("Can't parse ChatGPT API response")),
             }
-        },
+        }
         Err(e) => Err(e.to_string()),
     }
 }
@@ -116,7 +111,7 @@ fn get_response(prompt: &str, openai_key: &str) -> Result<String, String> {
 /// sends prompt to ChatGPT
 fn main() {
     let openai_key = get_openai_key();
-    
+
     if let Err(e) = openai_key {
         println!("{}", e);
         exit(1);
@@ -132,8 +127,9 @@ fn main() {
 
     let mut prompt = String::new();
     for (i, arg) in args.iter().enumerate() {
-        if i == 0 { continue; }
-        if i > 1 {
+        if i == 0 {
+            continue;
+        } else if i > 1 {
             prompt.push(' ');
         }
         prompt.push_str(arg);
@@ -143,6 +139,9 @@ fn main() {
 
     match response {
         Ok(response) => println!("ChatGPT: {response}"),
-        Err(e) => { dbg!(e); },
+        Err(e) => {
+            dbg!(e);
+            exit(1);
+        }
     };
 }
