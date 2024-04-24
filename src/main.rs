@@ -35,11 +35,41 @@ fn construct_body(prompt: &str) -> String {
     body.to_string()
 }
 
-fn get_response(prompt: &str, openai_key: &str) -> Result<String, reqwest::Error> {
-    let request_body = construct_body(&prompt);
+use serde::{Deserialize, Serialize};
 
-    println!("request body: {request_body}");
-    println!("key: '{openai_key}'");
+#[derive(Serialize, Deserialize, Debug)]
+struct ChatGPTResponse {
+    id: String,
+    object: String,
+    created: i32,
+    model: String,
+    choices: Vec<ChatGPTResponseChoice>,
+    usage: ChatGPTResponseUsage,
+    system_fingerprint: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct ChatGPTResponseChoice {
+    index: i32,
+    message: ChatGPTResponseChoiceMessage,
+    logprobs: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct ChatGPTResponseChoiceMessage {
+    role: String,
+    content: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct ChatGPTResponseUsage {
+    prompt_tokens: i32,
+    completion_tokens: i32,
+    total_tokens: i32,
+}
+
+fn get_response(prompt: &str, openai_key: &str) -> Result<String, String> {
+    let request_body = construct_body(&prompt);
 
     let client = reqwest::blocking::Client::new();
     let response_body = client.post("https://api.openai.com/v1/chat/completions")
@@ -48,11 +78,28 @@ fn get_response(prompt: &str, openai_key: &str) -> Result<String, reqwest::Error
         .body(request_body)
         .send();
 
-    println!("got request body");
-
     match response_body {
-        Ok(response) => response.text(),
-        Err(e) => Err(e),
+        Ok(response) => {
+            let data = response.text();
+            if let Err(_) = data {
+                return Err(String::from("Can't read response"))
+            }
+
+            let data = data.unwrap();
+
+            let parsed_data: Result<ChatGPTResponse, _> = serde_json::from_str(&data);
+
+            match parsed_data {
+                Ok(gpt_response) => {
+                    match gpt_response.choices.get(0) {
+                        Some(choice) => Ok(choice.message.content.clone()),
+                        None => Err(String::from("No first message"))
+                    }
+                },
+                Err(_) => Err(String::from("Can't parse ChatGPT API response")),
+            }
+        },
+        Err(e) => Err(e.to_string()),
     }
 }
 
@@ -78,7 +125,7 @@ fn main() {
     let response = get_response(&prompt, &openai_key);
 
     match response {
-        Ok(response) => println!("{response}"),
+        Ok(response) => println!("ChatGPT: {response}"),
         Err(e) => { dbg!(e); },
     };
 }
