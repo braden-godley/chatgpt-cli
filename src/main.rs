@@ -107,8 +107,6 @@ fn get_response(prompt: &str, openai_key: &str) -> Result<String, String> {
 }
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-
     let openai_key = get_openai_key();
     
     if let Err(e) = openai_key {
@@ -118,11 +116,19 @@ fn main() {
 
     let openai_key = openai_key.unwrap();
 
-    let mut prompt = String::new();
+    let args: Vec<String> = env::args().collect();
+    if args.len() <= 1 {
+        println!("usage: {} [prompt goes here]", args.get(0).unwrap());
+        exit(1);
+    }
 
-    for arg in args {
-        prompt.push_str(&arg);
-        prompt.push_str(" ");
+    let mut prompt = String::new();
+    for (i, arg) in args.iter().enumerate() {
+        if i == 0 { continue; }
+        if i > 1 {
+            prompt.push(' ');
+        }
+        prompt.push_str(arg);
     }
 
     let response = get_response(&prompt, &openai_key);
